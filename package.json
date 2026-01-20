@@ -42,7 +42,6 @@
   },
   "dependencies": {
     "jimp": "^1.6.0",
-    "war2-fnt": "link:",
     "yargs": "^18.0.0"
   }
 }
