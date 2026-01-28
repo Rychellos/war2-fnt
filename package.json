@@ -33,12 +33,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rychellos/war2-fnt.git"
+    "url": "git+https://github.com/Rychellos/war2-fnt.git"
   },
   "bugs": {
-    "url": "https://github.com/rychellos/war2-fnt/issues"
+    "url": "https://github.com/Rychellos/war2-fnt/issues"
   },
-  "homepage": "https://github.com/rychellos/war2-fnt#readme",
+  "homepage": "https://github.com/Rychellos/war2-fnt#readme",
   "packageManager": "pnpm@10.7.1",
   "devDependencies": {
     "@types/node": "^25.0.3",
