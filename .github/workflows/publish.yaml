@@ -38,10 +38,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Nodejs
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Checkout version changes
