@@ -1,23 +1,29 @@
 {
   "name": "war2-fnt",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Simple lib designed to ease of manipulating Blizzard .fnt files used in Warcraft 2.",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
   "type": "module",
-  "files": [
-    "dist"
-  ],
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "bin": {
     "war2-fnt": "dist/war2-fnt.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "ci:publish": "pnpm build && pnpm changeset publish"
+    "test:watch": "vitest"
   },
   "publishConfig": {
     "access": "public",
