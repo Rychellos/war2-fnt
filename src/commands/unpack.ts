@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Argv, Arguments } from "yargs";
-import { Jimp } from "jimp";
+import { PNGPaletteImage } from "png-palette";
 import { fntToBMFontAndPixelData, getPalette } from "../index";
 
 export const command = "unpack <file>";
@@ -73,23 +73,24 @@ export const handler = async (argv: Arguments<{ file: string; output: string; na
         if (result.pixelData) {
             const lookup = getPalette(argv.palette);
 
-            const colorData = new Uint8Array(4 * result.pixelData.length);
-            for (let i = 0; i < result.pixelData.length; i++) {
-                const idx = result.pixelData[i];
-                const color = lookup[idx] || lookup[0];
-                colorData[i * 4] = color.r;
-                colorData[i * 4 + 1] = color.g;
-                colorData[i * 4 + 2] = color.b;
-                colorData[i * 4 + 3] = color.a;
+            const png = new PNGPaletteImage(result.size.width, result.size.height, 8);
+
+            // Set palette
+            for (let i = 0; i < lookup.length; i++) {
+                const color = lookup[i];
+                png.setPaletteColor(i, color.r, color.g, color.b);
+                png.setTransparency(i, color.a);
             }
 
-            const png = new Jimp({
-                data: Buffer.from(colorData),
-                width: result.size.width,
-                height: result.size.height,
-            });
+            // Set pixels
+            for (let y = 0; y < result.size.height; y++) {
+                for (let x = 0; x < result.size.width; x++) {
+                    const idx = result.pixelData[y * result.size.width + x];
+                    png.setPixelPaletteIndex(x, y, idx);
+                }
+            }
 
-            const pngBuffer = await png.getBuffer("image/png");
+            const pngBuffer = png.encodeToPngBytes();
             const pngPath = path.join(outputDir, `${fontName}.png`);
             fs.writeFileSync(pngPath, pngBuffer);
             console.log(`Created: ${pngPath}`);

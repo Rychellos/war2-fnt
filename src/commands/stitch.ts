@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Argv, Arguments } from "yargs";
-import { Jimp } from "jimp";
+import { PNGPaletteImage } from "png-palette";
 import { War2Font, FontChar } from "../index";
 
 export const command = "stitch <dir>";
@@ -53,16 +53,24 @@ export const handler = async (argv: Arguments<{ dir: string; palette: string; ou
             const char = new FontChar(glyph.id, glyph.width, glyph.height, glyph.xOffset, glyph.yOffset);
 
             if (fs.existsSync(imgPath)) {
-                const image = await Jimp.read(imgPath);
-                const data = image.bitmap.data;
+                const imageBytes = fs.readFileSync(imgPath);
+                const image = PNGPaletteImage.fromPngBytes(new Uint8Array(imageBytes));
 
                 for (let py = 0; py < glyph.height; py++) {
                     for (let px = 0; px < glyph.width; px++) {
-                        const idx = (py * glyph.width + px) * 4;
-                        const r = data[idx];
-                        const g = data[idx + 1];
-                        const b = data[idx + 2];
-                        const a = data[idx + 3];
+                        const paletteIndex = image.getPixelPaletteIndex(px, py);
+                        const color = image.getPaletteColor(paletteIndex);
+                        const alpha = image.getTransparency(paletteIndex) ?? 255;
+
+                        if (!color) {
+                            char.data[py * glyph.width + px] = 0;
+                            continue;
+                        }
+
+                        const r = color.r;
+                        const g = color.g;
+                        const b = color.b;
+                        const a = alpha;
 
                         let bestIdx = 0;
                         let bestDist = Infinity;
@@ -90,7 +98,7 @@ export const handler = async (argv: Arguments<{ dir: string; palette: string; ou
 
         const font = War2Font.fromGlyphs(fontChars, metadata.charSpacing || 1);
         const binary = font.write();
-        
+
         fs.writeFileSync(outputPath, binary);
         console.log(`Created: ${outputPath}`);
     } catch (err) {

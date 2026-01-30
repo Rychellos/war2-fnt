@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Argv, Arguments } from "yargs";
-import { Jimp } from "jimp";
+import { PNGPaletteImage } from "png-palette";
 import { War2Font, getPalette } from "../index";
 
 export const command = "split <file>";
@@ -48,7 +48,7 @@ export const handler = async (argv: Arguments<{ file: string; output: string; pa
         const chars = font.getChars();
 
         const metadata = {
-            charSpacing: 1, // Default or could be an option
+            charSpacing: 1,
             glyphs: [] as any[]
         };
 
@@ -64,25 +64,24 @@ export const handler = async (argv: Arguments<{ file: string; output: string; pa
             });
 
             if (char.width > 0 && char.height > 0) {
-                const colorData = new Uint8Array(4 * char.data.length);
+                const png = new PNGPaletteImage(char.width, char.height, 8);
 
-                for (let i = 0; i < char.data.length; i++) {
-                    const idx = char.data[i];
-                    const color = lookup[char.data[i]] || lookup[0];
-                    
-                    colorData[i * 4] = color.r;
-                    colorData[i * 4 + 1] = color.g;
-                    colorData[i * 4 + 2] = color.b;
-                    colorData[i * 4 + 3] = color.a;
+                // Set palette
+                for (let i = 0; i < lookup.length; i++) {
+                    const color = lookup[i];
+                    png.setPaletteColor(i, color.r, color.g, color.b);
+                    png.setTransparency(i, color.a);
                 }
 
-                const png = new Jimp({
-                    data: Buffer.from(colorData),
-                    width: char.width,
-                    height: char.height
-                });
+                // Set pixels
+                for (let py = 0; py < char.height; py++) {
+                    for (let px = 0; px < char.width; px++) {
+                        const idx = char.data[py * char.width + px];
+                        png.setPixelPaletteIndex(px, py, idx);
+                    }
+                }
 
-                const pngBuffer = await png.getBuffer("image/png");
+                const pngBuffer = png.encodeToPngBytes();
                 fs.writeFileSync(path.join(outputDir, `char_${char.charCode}.png`), pngBuffer);
             }
         }

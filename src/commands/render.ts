@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import { Argv, Arguments } from "yargs";
-import { Jimp, rgbaToInt } from "jimp";
-import { War2Font, getPalette, PALETTES } from "../index";
+import { PNGPaletteImage } from "png-palette";
+import { War2Font, getPalette } from "../index";
 
 export const command = "render <file> <text>";
 export const describe = "Render a string of text using a Blizzard .fnt file";
@@ -85,11 +85,30 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
             process.exit(1);
         }
 
-        const canvas = new Jimp({ width: totalWidth, height: maxHeight });
+        // Identify unique palettes
+        const uniquePaletteNames = Array.from(new Set(segments.map(s => s.palette || argv.palette || "default")));
+        const paletteMap = new Map<string, number>();
+        uniquePaletteNames.forEach((name, index) => paletteMap.set(name, index));
+
+        const canvas = new PNGPaletteImage(totalWidth, maxHeight, uniquePaletteNames.length * 8);
+
+        // Fill the canvas palette
+        for (let pIdx = 0; pIdx < uniquePaletteNames.length; pIdx++) {
+            const paletteName = uniquePaletteNames[pIdx];
+            const palette = getPalette(paletteName);
+            const offset = pIdx * 8;
+            for (let i = 0; i < palette.length; i++) {
+                const color = palette[i];
+                canvas.setPaletteColor(offset + i, color.r, color.g, color.b);
+                canvas.setTransparency(offset + i, color.a);
+            }
+        }
+
         let cursorX = 0;
 
         for (const segment of segments) {
-            const lookup = getPalette(segment.palette || argv.palette);
+            const paletteName = segment.palette || argv.palette || "default";
+            const paletteOffset = (paletteMap.get(paletteName) || 0) * 8;
 
             for (const char of segment.text) {
                 const code = char.charCodeAt(0);
@@ -104,16 +123,12 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
 
                         if (palIdx === 0) continue;
 
-                        const color = lookup[palIdx] || lookup[0];
                         const drawX = cursorX + px;
                         const drawY = glyph.yOffset + py;
 
-                        if (drawX >= 0 && drawX < canvas.bitmap.width && drawY >= 0 && drawY < canvas.bitmap.height) {
-                            canvas.setPixelColor(
-                                rgbaToInt(color.r, color.g, color.b, color.a),
-                                drawX,
-                                drawY
-                            );
+                        if (drawX >= 0 && drawX < canvas.width && drawY >= 0 && drawY < canvas.height) {
+                            // Apply palette offset
+                            canvas.setPixelPaletteIndex(drawX, drawY, palIdx + paletteOffset);
                         }
                     }
                 }
@@ -122,7 +137,7 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
             }
         }
 
-        const outBuffer = await canvas.getBuffer("image/png");
+        const outBuffer = canvas.encodeToPngBytes();
         fs.writeFileSync(argv.output, outBuffer);
         console.log(`Rendered to: ${argv.output}`);
     } catch (err) {

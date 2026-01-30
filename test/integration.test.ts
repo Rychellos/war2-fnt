@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import * as fs from 'node:fs/promises';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { handler as splitHandler } from '../src/commands/split';
 import { handler as stitchHandler } from '../src/commands/stitch';
@@ -14,12 +14,12 @@ const STITCH_OUT = path.join(TEST_DIR, 'output.fnt');
 const RENDER_OUT = path.join(TEST_DIR, 'render_test.png');
 
 describe('CLI Integration', () => {
-    beforeAll(async () => {
-        await fs.mkdir(TEST_DIR, { recursive: true });
+    beforeAll(() => {
+        fs.mkdirSync(TEST_DIR, { recursive: true });
     });
 
-    afterAll(async () => {
-        await fs.rm(TEST_DIR, { recursive: true, force: true });
+    afterAll(() => {
+        fs.rmSync(TEST_DIR, { recursive: true, force: true });
     });
 
     it('should split .fnt file into images and metadata', async () => {
@@ -31,7 +31,7 @@ describe('CLI Integration', () => {
             _: ['split']
         } as any);
 
-        const files = await fs.readdir(SPLIT_DIR);
+        const files = fs.readdirSync(SPLIT_DIR);
         expect(files).toContain('metadata.json');
 
         // precise check for expected glyphs could be done here if we knew specific char codes
@@ -49,13 +49,13 @@ describe('CLI Integration', () => {
             _: ['stitch']
         } as any);
 
-        const exists = await fs.stat(STITCH_OUT).then(() => true).catch(() => false);
-        expect(exists).toBe(true);
+        const exists = fs.statSync(STITCH_OUT);
+        expect(exists).toBeDefined();
     });
 
-    it('should produce a file of similar size to original (roundtrip validity)', async () => {
-        const originalStats = await fs.stat(INPUT_FILE);
-        const newStats = await fs.stat(STITCH_OUT);
+    it('should produce a file of similar size to original (roundtrip validity)', () => {
+        const originalStats = fs.statSync(INPUT_FILE);
+        const newStats = fs.statSync(STITCH_OUT);
 
         // Exact byte match might fail if palette mapping isn't 1:1 reversible or compression differs
         // But size should be somewhat close.
@@ -78,9 +78,9 @@ describe('CLI Integration', () => {
             _: ['render']
         } as any);
 
-        const exists = await fs.stat(RENDER_OUT).then(() => true).catch(() => false);
-        expect(exists).toBe(true);
-        const stats = await fs.stat(RENDER_OUT);
+        const exists = fs.statSync(RENDER_OUT);
+        expect(exists).toBeDefined();
+        const stats = fs.statSync(RENDER_OUT);
         expect(stats.size).toBeGreaterThan(0);
     });
 });

@@ -1,7 +1,7 @@
-import { fntToBMFontAndPixelData } from "../src/index";
+import { fntToBMFontAndPixelData, getPalette } from "../src/index";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { Jimp } from "jimp";
+import { PNGPaletteImage } from "png-palette";
 import { test, expect, beforeAll, afterAll } from "vitest";
 
 const testFolder = "temp_tests_index";
@@ -18,7 +18,7 @@ afterAll(() => {
     }
 });
 
-test("Decoding .fnt file", async () => {
+test("Decoding .fnt file", () => {
     console.log("Starting Decoding .fnt file test...");
     const file = fs.readFileSync("test/small.war2-fnt");
 
@@ -36,41 +36,32 @@ test("Decoding .fnt file", async () => {
 
     expect(font, "Failed to parse file data").toBeDefined();
 
-    const lookup = [
-        { r: 0, g: 0, b: 0, a: 0 },
-        { r: 0xf4, g: 0xe0, b: 0x20, a: 0xff }, // #f4e020
-        { r: 208, g: 192, b: 28, a: 0xff }, // #d0c01c
-        { r: 168, g: 140, b: 16, a: 0xff }, // #a88c10
-        { r: 92, g: 48, b: 0, a: 0xff }, // #5c3000
-        { r: 0, g: 0, b: 0, a: 0xff }, // #000000
-    ];
+    const lookup = getPalette("gold");
 
     expect(font.pixelData).toBeDefined();
 
-    console.log("Converting pixel data to RGBA...");
-    const colorData = new Uint8Array(4 * font.pixelData!.length);
+    console.log("Creating image with PNGPaletteImage...");
+    const png = new PNGPaletteImage(font.size.width, font.size.height, 8);
 
-    for (let index = 0; index < font.pixelData!.length; index++) {
-        const color = lookup[font.pixelData![index]];
-        if (color) {
-            colorData[index * 4] = color.r;
-            colorData[index * 4 + 1] = color.g;
-            colorData[index * 4 + 2] = color.b;
-            colorData[index * 4 + 3] = color.a;
+    // Set palette
+    for (let i = 0; i < lookup.length; i++) {
+        const color = lookup[i];
+        png.setPaletteColor(i, color.r, color.g, color.b);
+        png.setTransparency(i, color.a);
+    }
+
+    // Set pixels
+    for (let y = 0; y < font.size.height; y++) {
+        for (let x = 0; x < font.size.width; x++) {
+            const idx = font.pixelData![y * font.size.width + x];
+            png.setPixelPaletteIndex(x, y, idx);
         }
     }
 
-    console.log("Creating image with Jimp...");
-    const png = new Jimp({
-        data: Buffer.from(colorData),
-        width: font.size.width,
-        height: font.size.height,
-    });
-
-    expect(png, "Failed to create Jimp instance").toBeDefined();
+    expect(png, "Failed to create PNGPaletteImage instance").toBeDefined();
 
     console.log("Saving test.png...");
-    const pngBuffer = await png.getBuffer("image/png");
+    const pngBuffer = png.encodeToPngBytes();
     fs.writeFileSync(path.join(testFolder, "test.png"), pngBuffer);
 
     expect(

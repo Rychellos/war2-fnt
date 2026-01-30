@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Argv, Arguments } from "yargs";
-import { Jimp } from "jimp";
+import { PNGPaletteImage } from "png-palette";
 import { getPalette, War2Font } from "../index";
 
 export const command = "pack <fnt> <image>";
@@ -51,15 +51,17 @@ export const handler = async (argv: Arguments<{ fnt: string; image: string; pale
 
     try {
         const bmfDesc = fs.readFileSync(fntPath, "utf-8");
-        const image = await Jimp.read(imgPath);
+        const imageBytes = fs.readFileSync(imgPath);
+        const image = PNGPaletteImage.fromPngBytes(new Uint8Array(imageBytes));
+
         const palette = getPalette(palNameOrPath);
 
         const font = War2Font.fromBMFont(
             bmfDesc,
             {
-                width: image.bitmap.width,
-                height: image.bitmap.height,
-                data: new Uint8Array(image.bitmap.data),
+                width: image.width,
+                height: image.height,
+                data: image.getImageData(),
             },
             palette
         );

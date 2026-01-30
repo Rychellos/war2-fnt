@@ -1,6 +1,6 @@
 {
   "name": "war2-fnt",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Simple lib designed to ease of manipulating Blizzard .fnt files used in Warcraft 2.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -49,7 +49,7 @@
     "vitest": "^4.0.15"
   },
   "dependencies": {
-    "jimp": "^1.6.0",
+    "png-palette": "^1.2.0",
     "yargs": "^18.0.0"
   }
 }

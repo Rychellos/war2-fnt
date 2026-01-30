@@ -53,7 +53,7 @@ test("Roundtrip .fnt file", () => {
     console.log("Roundtrip test successful.");
 });
 
-test.skip("Import from BMFont", async () => {
+test.skip("Import from BMFont", () => {
     console.log("Starting Import from BMFont test...");
     const file = fs.readFileSync("test/small.war2-fnt");
     const font = War2Font.fromBuffer(file.buffer as ArrayBuffer);
