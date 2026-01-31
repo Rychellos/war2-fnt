@@ -23,7 +23,7 @@ export const handler = async (argv: Arguments<{ file: string }>) => {
 
     try {
         const buffer = fs.readFileSync(filePath);
-        const font = War2Font.fromBuffer(buffer.buffer as ArrayBuffer);
+        const font = War2Font.fromBlizzardFntBytes(buffer.buffer as ArrayBuffer);
         const header = font.getHeader();
         const chars = font.getChars();
 

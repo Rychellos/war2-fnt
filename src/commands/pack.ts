@@ -66,7 +66,7 @@ export const handler = async (argv: Arguments<{ fnt: string; image: string; pale
             palette
         );
 
-        const binary = font.write();
+        const binary = font.toBlizzardFntBytes();
         fs.writeFileSync(outputPath, binary);
         console.log(`Created: ${outputPath}`);
     } catch (err) {

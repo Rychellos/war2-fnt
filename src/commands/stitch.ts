@@ -97,7 +97,7 @@ export const handler = async (argv: Arguments<{ dir: string; palette: string; ou
         }
 
         const font = War2Font.fromGlyphs(fontChars, metadata.charSpacing || 1);
-        const binary = font.write();
+        const binary = font.toBlizzardFntBytes();
 
         fs.writeFileSync(outputPath, binary);
         console.log(`Created: ${outputPath}`);

@@ -19,7 +19,7 @@ export function fntToBMFontAndPixelData(
     fileName: string,
     characterSpacing = 1,
 ) {
-    const reader = War2Font.fromBuffer(data, characterSpacing);
+    const reader = War2Font.fromBlizzardFntBytes(data, characterSpacing);
 
     const BMFTextBuffer = encodeBMF({
         chars: reader.getChars().map((char) => ({

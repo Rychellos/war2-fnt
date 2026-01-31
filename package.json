@@ -1,6 +1,6 @@
 {
   "name": "war2-fnt",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Simple lib designed to ease of manipulating Blizzard .fnt files used in Warcraft 2.",
   "type": "module",
   "main": "dist/index.cjs",
