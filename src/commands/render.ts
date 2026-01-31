@@ -46,7 +46,7 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
 
     try {
         const buffer = fs.readFileSync(filePath);
-        const font = War2Font.fromBuffer(buffer.buffer as ArrayBuffer, argv.spacing);
+        const font = War2Font.fromBlizzardFntBytes(buffer.buffer as ArrayBuffer, argv.spacing);
         const fontChars = font.getChars();
         const charMap = new Map(fontChars.map(c => [c.charCode, c]));
 

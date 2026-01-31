@@ -1,3 +1,4 @@
+import { PNGPaletteImage } from "png-palette";
 import { FontChar } from "./FontChar";
 import { War2FontHeader } from "./types";
 
@@ -27,12 +28,33 @@ export class War2Font {
         };
     }
 
+    /**
+     * Creates War2Font instance from Blizzard .fnt file
+     * @deprecated use fromBlizzardFntBytes instead
+     */
     public static fromBuffer(
         buffer: ArrayBuffer,
         charSpacing = 1,
     ): War2Font {
+        return this.fromBlizzardFntBytes(buffer, charSpacing);
+    }
+
+    /**
+     * Creates War2Font instance from Blizzard .fnt file
+     */
+    public static fromBlizzardFntBytes(
+        buffer: ArrayBuffer,
+        charSpacing = 1,
+    ): War2Font {
         const font = new War2Font(charSpacing);
-        font.parseBuffer(buffer);
+        
+        font.view = new DataView(buffer);
+        font.header = font.readHeader();
+        font.chars = font.getCharsDetails();
+        font.addSpaceChar();
+        font.calculateAtlasSizeAndPlaceChars();
+        font.pixelData = font.generateAtlasTexture();
+        
         return font;
     }
 
@@ -51,19 +73,18 @@ export class War2Font {
         return font;
     }
 
-    private parseBuffer(buffer: ArrayBuffer) {
-        this.view = new DataView(buffer);
-        this.header = this.readHeader();
-        this.chars = this.getCharsDetails();
-        this.addSpaceChar();
-        this.calculateAtlasSizeAndPlaceChars();
-        this.pixelData = this.generateAtlasTexture();
+    /**
+     * Validates and returns the binary font file.
+     * @deprecated use toFntBytes instead
+     */
+    public write(): Uint8Array {
+        return this.toBlizzardFntBytes();
     }
 
     /*
      * Validates and returns the binary font file.
      */
-    public write(): Uint8Array {
+    public toBlizzardFntBytes(): Uint8Array {
         // Recalculate header based on chars
         this.recalculateHeader();
 
@@ -393,82 +414,66 @@ export class War2Font {
         }
     }
 
+    /**
+     * 
+     * @param bmFontMetadata String that describes BMFont (.fnt file)
+     * @param imageSource Eighter instance of PNGPaletteImage from png-palette package or width, height and RGBA image data
+     * @param palette If using width, height and data then it is required to be appropriate palette, otherwise can be omitted
+     * @returns 
+     */
     public static fromBMFont(
-        bmFontDesc: string,
-        imageData: { width: number; height: number; data: Uint8Array },
-        palette: { r: number; g: number; b: number; a: number }[],
+        bmFontMetadata: string,
+        imageSource: PNGPaletteImage | { width: number; height: number; data: Uint8Array },
+        palette?: { r: number; g: number; b: number; a: number }[]
     ): War2Font {
         const font = new War2Font();
-        const lines = bmFontDesc.split(/\r?\n/);
+        const lines = bmFontMetadata.split(/\r?\n/);
+
+        const isPaletteImage = imageSource instanceof PNGPaletteImage;
+
+        if (!isPaletteImage && !palette) {
+            throw new Error(
+                "Invalid data given. If using {width: number, height: number, data: RGBA[]} then palette must be specified."
+            );
+        }
 
         for (const line of lines) {
             const trimmed = line.trim();
+            
+            if (!trimmed.startsWith("char ")) continue;
 
-            if (trimmed.startsWith("char ")) {
-                const charProps = trimmed.split(/\s+/).slice(1);
-                const props: Record<string, number> = {};
+            const props = this.parseBMFontLine(trimmed);
+            const { id, x, y, width, height, xoffset, yoffset } = props;
 
-                for (const prop of charProps) {
-                    const [key, val] = prop.split("=");
-                    if (key && val) {
-                        props[key] = parseInt(val, 10);
+            if (width === 0 || height === 0) continue;
+
+            const char = new FontChar(id, width, height, xoffset, yoffset);
+            const charData = char.data;
+
+            for (let py = 0; py < height; py++) {
+                const destRow = py * width;
+                const srcY = y + py;
+
+                for (let px = 0; px < width; px++) {
+                    const srcX = x + px;
+                    const destIdx = destRow + px;
+
+                    if (isPaletteImage) {
+                        charData[destIdx] = imageSource.getPixelPaletteIndex(srcX, srcY);
+                    } else {
+                        const srcIdx = (srcY * imageSource.width + srcX) * 4;
+
+                        const r = imageSource.data[srcIdx]!;
+                        const g = imageSource.data[srcIdx + 1]!;
+                        const b = imageSource.data[srcIdx + 2]!;
+                        const a = imageSource.data[srcIdx + 3]!;
+
+                        charData[destIdx] = this.findClosestPaletteIndex(r, g, b, a, palette!);
                     }
                 }
-
-                const id = props["id"] ?? 0;
-                const x = props["x"] ?? 0;
-                const y = props["y"] ?? 0;
-                const width = props["width"] ?? 0;
-                const height = props["height"] ?? 0;
-                const xoffset = props["xoffset"] ?? 0;
-                const yoffset = props["yoffset"] ?? 0;
-
-                if (width === 0 || height === 0) continue;
-
-                // Create FontChar
-                const char = new FontChar(id, width, height, xoffset, yoffset);
-
-                // Extract pixels
-                const charData = char.data;
-                for (let py = 0; py < height; py++) {
-                    const destRow = py * width;
-                    const srcRowBase = (y + py) * imageData.width + x;
-
-                    for (let px = 0; px < width; px++) {
-                        const srcIdx = (srcRowBase + px) * 4;
-                        if (srcIdx >= imageData.data.length) continue;
-
-                        const r = imageData.data[srcIdx];
-                        const g = imageData.data[srcIdx + 1];
-                        const b = imageData.data[srcIdx + 2];
-                        const a = imageData.data[srcIdx + 3];
-
-                        // Find closest palette index
-                        let bestIdx = 0;
-                        let bestDist = Infinity;
-
-                        // Iterate all palette entries
-                        for (let pid = 0; pid < palette.length; pid++) {
-                            const p = palette[pid];
-                            // Simple Euclidean distance
-                            const dist = Math.sqrt(
-                                Math.pow(r - p.r, 2) +
-                                Math.pow(g - p.g, 2) +
-                                Math.pow(b - p.b, 2) +
-                                Math.pow(a - p.a, 2),
-                            );
-                            if (dist < bestDist) {
-                                bestDist = dist;
-                                bestIdx = pid;
-                            }
-                        }
-
-                        charData[destRow + px] = bestIdx;
-                    }
-                }
-
-                font.chars.push(char);
             }
+
+            font.chars.push(char);
         }
 
         font.recalculateHeader();
@@ -476,5 +481,42 @@ export class War2Font {
         font.pixelData = font.generateAtlasTexture();
 
         return font;
+    }
+
+    private static findClosestPaletteIndex(
+        r: number, g: number, b: number, a: number, 
+        palette: { r: number; g: number; b: number; a: number }[]
+    ): number {
+        let bestIdx = 0;
+        let bestDist = Infinity;
+
+        for (let i = 0; i < palette.length; i++) {
+            const p = palette[i]!;
+            const dist = Math.sqrt(
+                Math.pow(r - p.r, 2) +
+                Math.pow(g - p.g, 2) +
+                Math.pow(b - p.b, 2) +
+                Math.pow(a - p.a, 2)
+            );
+
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestIdx = i;
+            }
+        }
+
+        return bestIdx;
+    }
+
+    private static parseBMFontLine(line: string): Record<string, number> {
+        const props: Record<string, number> = {};
+        const parts = line.split(/\s+/).slice(1);
+
+        for (const part of parts) {
+            const [key, val] = part.split("=");
+            if (key && val) props[key] = parseInt(val, 10);
+        }
+
+        return props;
     }
 }
