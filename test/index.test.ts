@@ -25,14 +25,19 @@ test("Decoding .fnt file", () => {
     console.log("Parsing .fnt file...");
     let font:
         | {
-            pixelData: Uint8Array<ArrayBuffer> | null;
-            BMFTextBuffer: Uint8Array<ArrayBuffer>;
-            size: {
-                width: number;
-                height: number;
-            };
-        }
-        | undefined = fntToBMFontAndPixelData(file.buffer as ArrayBuffer, "small", "small", 0);
+              pixelData: Uint8Array<ArrayBuffer> | null;
+              BMFTextBuffer: Uint8Array<ArrayBuffer>;
+              size: {
+                  width: number;
+                  height: number;
+              };
+          }
+        | undefined = fntToBMFontAndPixelData(
+        file.buffer as ArrayBuffer,
+        "small",
+        "small",
+        0,
+    );
 
     expect(font, "Failed to parse file data").toBeDefined();
 
@@ -46,8 +51,7 @@ test("Decoding .fnt file", () => {
     // Set palette
     for (let i = 0; i < lookup.length; i++) {
         const color = lookup[i];
-        png.setPaletteColor(i, color.r, color.g, color.b);
-        png.setTransparency(i, color.a);
+        png.setPaletteColor(i, color.r, color.g, color.b, color.a);
     }
 
     // Set pixels
@@ -66,7 +70,7 @@ test("Decoding .fnt file", () => {
 
     expect(
         fs.existsSync(path.join(testFolder, "test.png")),
-        "Failed to create .png"
+        "Failed to create .png",
     ).toBe(true);
 
     console.log("Saving test.fnt...");
@@ -74,7 +78,7 @@ test("Decoding .fnt file", () => {
 
     expect(
         fs.existsSync(path.join(testFolder, "test.fnt")),
-        "Failed to create .fnt"
+        "Failed to create .fnt",
     ).toBe(true);
 
     console.log("Decoding test successful.");
