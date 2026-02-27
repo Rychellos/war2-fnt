@@ -14,7 +14,8 @@ export const builder = (y: Argv) => {
             demandOption: true,
         })
         .positional("text", {
-            describe: 'Text to render. Can be a string or JSON array: \'[{"text": "Hello ", "palette": "red"}, {"text": "World", "palette": "red"}]\'',
+            describe:
+                'Text to render. Can be a string or JSON array: \'[{"text": "Hello ", "palette": "red"}, {"text": "World", "palette": "red"}]\'',
             type: "string",
             demandOption: true,
         })
@@ -26,7 +27,8 @@ export const builder = (y: Argv) => {
         })
         .option("palette", {
             alias: "p",
-            describe: "Name of built-in palette or path to JSON file (array of {r,g,b,a})",
+            describe:
+                "Name of built-in palette or path to JSON file (array of {r,g,b,a})",
             type: "string",
         })
         .option("spacing", {
@@ -37,7 +39,15 @@ export const builder = (y: Argv) => {
         });
 };
 
-export const handler = async (argv: Arguments<{ file: string; text: string; output: string; palette?: string; spacing: number }>) => {
+export const handler = async (
+    argv: Arguments<{
+        file: string;
+        text: string;
+        output: string;
+        palette?: string;
+        spacing: number;
+    }>,
+) => {
     const filePath = argv.file;
     if (!fs.existsSync(filePath)) {
         console.error(`File not found: ${filePath}`);
@@ -46,9 +56,12 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
 
     try {
         const buffer = fs.readFileSync(filePath);
-        const font = War2Font.fromBlizzardFntBytes(buffer.buffer as ArrayBuffer, argv.spacing);
+        const font = War2Font.fromBlizzardFntBytes(
+            buffer.buffer as ArrayBuffer,
+            argv.spacing,
+        );
         const fontChars = font.getChars();
-        const charMap = new Map(fontChars.map(c => [c.charCode, c]));
+        const charMap = new Map(fontChars.map((c) => [c.charCode, c]));
 
         let segments: { text: string; palette?: string }[] = [];
         const trimmedText = argv.text.trim();
@@ -86,11 +99,21 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
         }
 
         // Identify unique palettes
-        const uniquePaletteNames = Array.from(new Set(segments.map(s => s.palette || argv.palette || "default")));
+        const uniquePaletteNames = Array.from(
+            new Set(
+                segments.map((s) => s.palette || argv.palette || "default"),
+            ),
+        );
         const paletteMap = new Map<string, number>();
-        uniquePaletteNames.forEach((name, index) => paletteMap.set(name, index));
+        uniquePaletteNames.forEach((name, index) =>
+            paletteMap.set(name, index),
+        );
 
-        const canvas = new PNGPaletteImage(totalWidth, maxHeight, uniquePaletteNames.length * 8);
+        const canvas = new PNGPaletteImage(
+            totalWidth,
+            maxHeight,
+            uniquePaletteNames.length * 8,
+        );
 
         // Fill the canvas palette
         for (let pIdx = 0; pIdx < uniquePaletteNames.length; pIdx++) {
@@ -99,8 +122,13 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
             const offset = pIdx * 8;
             for (let i = 0; i < palette.length; i++) {
                 const color = palette[i];
-                canvas.setPaletteColor(offset + i, color.r, color.g, color.b);
-                canvas.setTransparency(offset + i, color.a);
+                canvas.setPaletteColor(
+                    offset + i,
+                    color.r,
+                    color.g,
+                    color.b,
+                    color.a,
+                );
             }
         }
 
@@ -126,9 +154,18 @@ export const handler = async (argv: Arguments<{ file: string; text: string; outp
                         const drawX = cursorX + px;
                         const drawY = glyph.yOffset + py;
 
-                        if (drawX >= 0 && drawX < canvas.width && drawY >= 0 && drawY < canvas.height) {
+                        if (
+                            drawX >= 0 &&
+                            drawX < canvas.width &&
+                            drawY >= 0 &&
+                            drawY < canvas.height
+                        ) {
                             // Apply palette offset
-                            canvas.setPixelPaletteIndex(drawX, drawY, palIdx + paletteOffset);
+                            canvas.setPixelPaletteIndex(
+                                drawX,
+                                drawY,
+                                palIdx + paletteOffset,
+                            );
                         }
                     }
                 }

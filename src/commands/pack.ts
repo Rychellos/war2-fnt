@@ -21,8 +21,9 @@ export const builder = (y: Argv) => {
         })
         .option("palette", {
             alias: "p",
-            describe: "Name of built-in palette or path to JSON file (array of {r,g,b,a})",
-            type: "string"
+            describe:
+                "Name of built-in palette or path to JSON file (array of {r,g,b,a})",
+            type: "string",
         })
         .option("output", {
             alias: "o",
@@ -31,11 +32,19 @@ export const builder = (y: Argv) => {
         });
 };
 
-export const handler = async (argv: Arguments<{ fnt: string; image: string; palette: string; output?: string }>) => {
+export const handler = async (
+    argv: Arguments<{
+        fnt: string;
+        image: string;
+        palette: string;
+        output?: string;
+    }>,
+) => {
     const fntPath = argv.fnt;
     const imgPath = argv.image;
     const palNameOrPath = argv.palette;
-    const outputPath = argv.output || path.join(path.dirname(fntPath), "out.fnt");
+    const outputPath =
+        argv.output || path.join(path.dirname(fntPath), "out.fnt");
 
     if (!fs.existsSync(fntPath)) {
         console.error("Font file not found.");
@@ -52,7 +61,19 @@ export const handler = async (argv: Arguments<{ fnt: string; image: string; pale
     try {
         const bmfDesc = fs.readFileSync(fntPath, "utf-8");
         const imageBytes = fs.readFileSync(imgPath);
-        const image = PNGPaletteImage.fromPngBytes(new Uint8Array(imageBytes));
+        const imageCreationResult = PNGPaletteImage.fromPngBytes(
+            new Uint8Array(imageBytes),
+        );
+
+        if (imageCreationResult.isErr()) {
+            console.error(
+                `Error: ${(imageCreationResult.error as Error).message}`,
+            );
+
+            process.exit(1);
+        }
+
+        const image = imageCreationResult.value;
 
         const palette = getPalette(palNameOrPath);
 
@@ -63,7 +84,7 @@ export const handler = async (argv: Arguments<{ fnt: string; image: string; pale
                 height: image.height,
                 data: image.getImageData(),
             },
-            palette
+            palette,
         );
 
         const binary = font.toBlizzardFntBytes();

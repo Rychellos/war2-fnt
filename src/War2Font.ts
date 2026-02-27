@@ -32,10 +32,7 @@ export class War2Font {
      * Creates War2Font instance from Blizzard .fnt file
      * @deprecated use fromBlizzardFntBytes instead
      */
-    public static fromBuffer(
-        buffer: ArrayBuffer,
-        charSpacing = 1,
-    ): War2Font {
+    public static fromBuffer(buffer: ArrayBuffer, charSpacing = 1): War2Font {
         return this.fromBlizzardFntBytes(buffer, charSpacing);
     }
 
@@ -47,24 +44,21 @@ export class War2Font {
         charSpacing = 1,
     ): War2Font {
         const font = new War2Font(charSpacing);
-        
+
         font.view = new DataView(buffer);
         font.header = font.readHeader();
         font.chars = font.getCharsDetails();
         font.addSpaceChar();
         font.calculateAtlasSizeAndPlaceChars();
         font.pixelData = font.generateAtlasTexture();
-        
+
         return font;
     }
 
     /**
      * Creates a War2Font instance from a list of FontChar objects.
      */
-    public static fromGlyphs(
-        chars: FontChar[],
-        charSpacing = 1,
-    ): War2Font {
+    public static fromGlyphs(chars: FontChar[], charSpacing = 1): War2Font {
         const font = new War2Font(charSpacing);
         font.chars = chars;
         font.recalculateHeader();
@@ -211,7 +205,7 @@ export class War2Font {
 
     /**
      * The data is palette index (0-7) in all color channels (RGB)
-     * and apha of 255.
+     * and alpha of 255.
      *
      * For example one pixel with color index 4 would be: [4, 4, 4, 255]
      * This property can be useful for debugging.
@@ -415,16 +409,18 @@ export class War2Font {
     }
 
     /**
-     * 
+     *
      * @param bmFontMetadata String that describes BMFont (.fnt file)
-     * @param imageSource Eighter instance of PNGPaletteImage from png-palette package or width, height and RGBA image data
+     * @param imageSource Either instance of PNGPaletteImage from png-palette package or width, height and RGBA image data
      * @param palette If using width, height and data then it is required to be appropriate palette, otherwise can be omitted
-     * @returns 
+     * @returns
      */
     public static fromBMFont(
         bmFontMetadata: string,
-        imageSource: PNGPaletteImage | { width: number; height: number; data: Uint8Array },
-        palette?: { r: number; g: number; b: number; a: number }[]
+        imageSource:
+            | PNGPaletteImage
+            | { width: number; height: number; data: Uint8Array },
+        palette?: { r: number; g: number; b: number; a: number }[],
     ): War2Font {
         const font = new War2Font();
         const lines = bmFontMetadata.split(/\r?\n/);
@@ -433,13 +429,13 @@ export class War2Font {
 
         if (!isPaletteImage && !palette) {
             throw new Error(
-                "Invalid data given. If using {width: number, height: number, data: RGBA[]} then palette must be specified."
+                "Invalid data given. If using {width: number, height: number, data: RGBA[]} then palette must be specified.",
             );
         }
 
         for (const line of lines) {
             const trimmed = line.trim();
-            
+
             if (!trimmed.startsWith("char ")) continue;
 
             const props = this.parseBMFontLine(trimmed);
@@ -459,7 +455,10 @@ export class War2Font {
                     const destIdx = destRow + px;
 
                     if (isPaletteImage) {
-                        charData[destIdx] = imageSource.getPixelPaletteIndex(srcX, srcY);
+                        charData[destIdx] = imageSource.getPixelPaletteIndex(
+                            srcX,
+                            srcY,
+                        );
                     } else {
                         const srcIdx = (srcY * imageSource.width + srcX) * 4;
 
@@ -468,7 +467,13 @@ export class War2Font {
                         const b = imageSource.data[srcIdx + 2]!;
                         const a = imageSource.data[srcIdx + 3]!;
 
-                        charData[destIdx] = this.findClosestPaletteIndex(r, g, b, a, palette!);
+                        charData[destIdx] = this.findClosestPaletteIndex(
+                            r,
+                            g,
+                            b,
+                            a,
+                            palette!,
+                        );
                     }
                 }
             }
@@ -484,8 +489,11 @@ export class War2Font {
     }
 
     private static findClosestPaletteIndex(
-        r: number, g: number, b: number, a: number, 
-        palette: { r: number; g: number; b: number; a: number }[]
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+        palette: { r: number; g: number; b: number; a: number }[],
     ): number {
         let bestIdx = 0;
         let bestDist = Infinity;
@@ -494,9 +502,9 @@ export class War2Font {
             const p = palette[i]!;
             const dist = Math.sqrt(
                 Math.pow(r - p.r, 2) +
-                Math.pow(g - p.g, 2) +
-                Math.pow(b - p.b, 2) +
-                Math.pow(a - p.a, 2)
+                    Math.pow(g - p.g, 2) +
+                    Math.pow(b - p.b, 2) +
+                    Math.pow(a - p.a, 2),
             );
 
             if (dist < bestDist) {

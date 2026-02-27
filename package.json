@@ -1,61 +1,61 @@
 {
-  "name": "war2-fnt",
-  "version": "2.2.0",
-  "description": "Simple lib designed to ease of manipulating Blizzard .fnt files used in Warcraft 2.",
-  "type": "module",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+    "name": "war2-fnt",
+    "version": "2.3.0",
+    "description": "Simple lib designed to ease of manipulating Blizzard .fnt files used in Warcraft 2.",
+    "type": "module",
+    "main": "dist/index.cjs",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "bin": {
+        "war2-fnt": "dist/war2-fnt.js"
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "publishConfig": {
+        "access": "public",
+        "provenance": true
+    },
+    "keywords": [
+        "typescript",
+        "library",
+        "warcraft 2",
+        "warcraft II",
+        "cli"
+    ],
+    "author": "Rychellos",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Rychellos/war2-fnt.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Rychellos/war2-fnt/issues"
+    },
+    "homepage": "https://github.com/Rychellos/war2-fnt#readme",
+    "packageManager": "pnpm@10.7.1",
+    "devDependencies": {
+        "@types/node": "^25.3.2",
+        "@types/yargs": "^17.0.35",
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18"
+    },
+    "dependencies": {
+        "png-palette": "^2.0.0",
+        "yargs": "^18.0.0"
     }
-  },
-  "bin": {
-    "war2-fnt": "dist/war2-fnt.js"
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "keywords": [
-    "typescript",
-    "library",
-    "warcraft 2",
-    "warcraft II",
-    "cli"
-  ],
-  "author": "Rychellos",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Rychellos/war2-fnt.git"
-  },
-  "bugs": {
-    "url": "https://github.com/Rychellos/war2-fnt/issues"
-  },
-  "homepage": "https://github.com/Rychellos/war2-fnt#readme",
-  "packageManager": "pnpm@10.7.1",
-  "devDependencies": {
-    "@types/node": "^25.0.3",
-    "@types/yargs": "^17.0.35",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.15"
-  },
-  "dependencies": {
-    "png-palette": "^1.2.0",
-    "yargs": "^18.0.0"
-  }
 }

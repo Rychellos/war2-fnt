@@ -22,12 +22,15 @@ export const builder = (y: Argv) => {
         })
         .option("palette", {
             alias: "p",
-            describe: "Name of built-in palette or path to JSON file (array of {r,g,b,a})",
+            describe:
+                "Name of built-in palette or path to JSON file (array of {r,g,b,a})",
             type: "string",
         });
 };
 
-export const handler = async (argv: Arguments<{ file: string; output: string; palette?: string }>) => {
+export const handler = async (
+    argv: Arguments<{ file: string; output: string; palette?: string }>,
+) => {
     const filePath = argv.file;
     const outputDir = argv.output;
 
@@ -44,12 +47,14 @@ export const handler = async (argv: Arguments<{ file: string; output: string; pa
 
     try {
         const buffer = fs.readFileSync(filePath);
-        const font = War2Font.fromBlizzardFntBytes(buffer.buffer as ArrayBuffer);
+        const font = War2Font.fromBlizzardFntBytes(
+            buffer.buffer as ArrayBuffer,
+        );
         const chars = font.getChars();
 
         const metadata = {
             charSpacing: 1,
-            glyphs: [] as any[]
+            glyphs: [] as any[],
         };
 
         const lookup = getPalette(argv.palette);
@@ -60,7 +65,7 @@ export const handler = async (argv: Arguments<{ file: string; output: string; pa
                 xOffset: char.xOffset,
                 yOffset: char.yOffset,
                 width: char.width,
-                height: char.height
+                height: char.height,
             });
 
             if (char.width > 0 && char.height > 0) {
@@ -69,8 +74,7 @@ export const handler = async (argv: Arguments<{ file: string; output: string; pa
                 // Set palette
                 for (let i = 0; i < lookup.length; i++) {
                     const color = lookup[i];
-                    png.setPaletteColor(i, color.r, color.g, color.b);
-                    png.setTransparency(i, color.a);
+                    png.setPaletteColor(i, color.r, color.g, color.b, color.a);
                 }
 
                 // Set pixels
@@ -82,12 +86,20 @@ export const handler = async (argv: Arguments<{ file: string; output: string; pa
                 }
 
                 const pngBuffer = png.encodeToPngBytes();
-                fs.writeFileSync(path.join(outputDir, `char_${char.charCode}.png`), pngBuffer);
+                fs.writeFileSync(
+                    path.join(outputDir, `char_${char.charCode}.png`),
+                    pngBuffer,
+                );
             }
         }
 
-        fs.writeFileSync(path.join(outputDir, "metadata.json"), JSON.stringify(metadata, null, 2));
-        console.log(`Split complete. Metadata and ${chars.length} glyphs saved.`);
+        fs.writeFileSync(
+            path.join(outputDir, "metadata.json"),
+            JSON.stringify(metadata, null, 2),
+        );
+        console.log(
+            `Split complete. Metadata and ${chars.length} glyphs saved.`,
+        );
     } catch (err) {
         console.error(`Error: ${(err as Error).message}`);
         process.exit(1);
