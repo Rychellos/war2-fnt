@@ -455,10 +455,18 @@ export class War2Font {
                     const destIdx = destRow + px;
 
                     if (isPaletteImage) {
-                        charData[destIdx] = imageSource.getPixelPaletteIndex(
+                        const getPixelResult = imageSource.getPixelPaletteIndex(
                             srcX,
                             srcY,
                         );
+
+                        if (getPixelResult.isErr()) {
+                            throw new Error(
+                                "Something went wrong when getting palette index of a pixel",
+                            );
+                        }
+
+                        charData[destIdx] = getPixelResult.value;
                     } else {
                         const srcIdx = (srcY * imageSource.width + srcX) * 4;
 
